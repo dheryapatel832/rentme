@@ -11,20 +11,8 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "space_rental";
-
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 // Get user input
 $room_id = $_POST['room_id'];
 $comment = $_POST['comment'];

@@ -8,16 +8,8 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "space_rental";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
 if (!isset($_GET['id'])) {
     die("Room ID is required.");

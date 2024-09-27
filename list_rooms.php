@@ -11,24 +11,29 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-// Database connection
+// Database connection details
 $servername = "localhost";
-$username = "root";
-$password = "";
+$db_username = "root";
+$db_password = "";
 $dbname = "space_rental";
 
 // Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = new mysqli($servername, $db_username, $db_password, $dbname);
 
 // Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch available rooms
-$sql = "SELECT id, title, description, price FROM rooms";
+// Fetch available rooms along with the username and profile picture of the poster
+// Fetch available rooms along with the username and profile picture of the poster
+$sql = "SELECT rooms.id, rooms.title, rooms.description, rooms.price, users.id AS user_id, users.username, users.profile_picture 
+        FROM rooms 
+        JOIN users ON users.id = rooms.user_id";
+
 $result = $conn->query($sql);
-?>
+
+
 ?>
 
 <!DOCTYPE html>
@@ -61,6 +66,47 @@ $result = $conn->query($sql);
         .plus-button:hover {
             background-color: #0056b3;
         }
+		.user-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-info a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.profile-picture {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.user-info strong {
+    font-size: 1.2em;
+}
+
+
+.profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 10px;
+}
+
+.username {
+    font-weight: bold;
+    color: #333;
+}
+
 
         .room-item {
             margin-bottom: 20px;
@@ -237,80 +283,95 @@ $result = $conn->query($sql);
         <section id="room-list">
             <a href="update_profile.php">profile</a>
             <h2>Available Rooms</h2>
-            <?php
-            if ($result->num_rows > 0) {
-                // Output data of each row
-                while ($row = $result->fetch_assoc()) {
-                    echo "<div class='room-item'>";
-                    echo "<h3>" . htmlspecialchars($row["title"]) . "</h3>";
-                    echo "<p>" . htmlspecialchars($row["description"]) . "</p>";
-                    echo "<p>Price: $" . htmlspecialchars($row["price"]) . " per night</p>";
-                    
-                    // Display room images if available
-                    $roomId = $row["id"];
-                    $imageSql = "SELECT image_filename FROM room_images WHERE room_id = ?";
-                    $imageStmt = $conn->prepare($imageSql);
-                    $imageStmt->bind_param("i", $roomId);
-                    $imageStmt->execute();
-                    $imageResult = $imageStmt->get_result();
+           <?php
+if ($result->num_rows > 0) {
+    // Output data of each row
+    while ($row = $result->fetch_assoc()) {
+        echo "<div class='room-item'>";
+        echo "<div class='user-info'>";
 
-                    $images = [];
-                    while ($imageRow = $imageResult->fetch_assoc()) {
-                        $images[] = htmlspecialchars($imageRow["image_filename"]);
-                    }
+        // Profile Picture as a hyperlink to the user's posts
+        echo "<a href='user_posts.php?user_id=" . htmlspecialchars($row['user_id']) . "'>"; // Changed from $row['id'] to $row['user_id']
+        echo "<img src='uploads/profile_pictures/" . htmlspecialchars($row["profile_picture"]) . "' alt='Profile Picture' class='profile-pic'>";
+        echo "</a>";
 
-                    echo "<div class='room-images'>";
-                    if (count($images) > 0) {
-                        echo "<div class='main-images'>";
-                        for ($i = 0; $i < min(3, count($images)); $i++) {
-                            echo "<img src='uploads/" . $images[$i] . "' alt='Room Image' class='room-image' onclick='openModal($roomId, $i)'>";
-                        }
-                        echo "</div>";
+        // Username as a hyperlink to the user's posts
+        echo "<a href='user_posts.php?user_id=" . htmlspecialchars($row['user_id']) . "'>"; // Changed from $row['id'] to $row['user_id']
+        echo "<span class='username'>" . htmlspecialchars($row["username"]) . "</span>";
+        echo "</a>";
+        echo "</div>";
 
-                        if (count($images) > 3) {
-                            echo "<div class='extra-images'>";
-                            for ($i = 3; $i < count($images); $i++) {
-                                echo "<img src='uploads/" . $images[$i] . "' alt='Room Image' class='room-image' onclick='openModal($roomId, $i)'>";
-                            }
-                            echo "<div class='more-images-overlay'>+" . (count($images) - 3) . " more</div>";
-                            echo "</div>";
-                        }
-                    }
-                    echo "</div>";
+        echo "<h3>" . htmlspecialchars($row["title"]) . "</h3>";
+        echo "<p>" . htmlspecialchars($row["description"]) . "</p>";
+        echo "<p>Price: $" . htmlspecialchars($row["price"]) . " per night</p>";
+        
+        // Display room images if available
+        $roomId = $row["id"];
+        $imageSql = "SELECT image_filename FROM room_images WHERE room_id = ?";
+        $imageStmt = $conn->prepare($imageSql);
+        $imageStmt->bind_param("i", $roomId);
+        $imageStmt->execute();
+        $imageResult = $imageStmt->get_result();
 
-                    echo "<div class='comments-header' onclick='toggleComments($roomId)'>Comments</div>";
-                    echo "<div id='comments-$roomId' class='comments-section'>";
+        $images = [];
+        while ($imageRow = $imageResult->fetch_assoc()) {
+            $images[] = htmlspecialchars($imageRow["image_filename"]);
+        }
 
-                    // Fetch and display comments for the room
-                    $commentSql = "SELECT username, comment FROM comments WHERE room_id = ?";
-                    $commentStmt = $conn->prepare($commentSql);
-                    $commentStmt->bind_param("i", $roomId);
-                    $commentStmt->execute();
-                    $commentResult = $commentStmt->get_result();
-
-                    if ($commentResult->num_rows > 0) {
-                        while ($commentRow = $commentResult->fetch_assoc()) {
-                            echo "<p><strong>" . htmlspecialchars($commentRow["username"]) . ":</strong> " . htmlspecialchars($commentRow["comment"]) . "</p>";
-                        }
-                    } else {
-                        echo "<p>No comments yet.</p>";
-                    }
-
-                    // Comment form
-                    echo "<form action='submit_comment.php' method='POST' class='comments-form'>
-                            <input type='hidden' name='room_id' value='" . htmlspecialchars($roomId) . "'>
-                            <label for='comment'>Add a comment:</label>
-                            <textarea id='comment' name='comment' required></textarea>
-                            <button type='submit'>Submit</button>
-                        </form>";
-
-                    echo "</div></div>";
-                }
-            } else {
-                echo "<p>No rooms available.</p>";
+        echo "<div class='room-images'>";
+        if (count($images) > 0) {
+            echo "<div class='main-images'>";
+            for ($i = 0; $i < min(3, count($images)); $i++) {
+                echo "<img src='uploads/" . $images[$i] . "' alt='Room Image' class='room-image' onclick='openModal($roomId, $i)'>";
             }
-            $conn->close();
-            ?>
+            echo "</div>";
+
+            if (count($images) > 3) {
+                echo "<div class='extra-images'>";
+                for ($i = 3; $i < count($images); $i++) {
+                    echo "<img src='uploads/" . $images[$i] . "' alt='Room Image' class='room-image' onclick='openModal($roomId, $i)'>";
+                }
+                echo "<div class='more-images-overlay'>+" . (count($images) - 3) . " more</div>";
+                echo "</div>";
+            }
+        }
+        echo "</div>";
+
+        echo "<div class='comments-header' onclick='toggleComments($roomId)'>Comments</div>";
+        echo "<div id='comments-$roomId' class='comments-section'>";
+
+        // Fetch and display comments for the room
+        $commentSql = "SELECT username, comment FROM comments WHERE room_id = ?";
+        $commentStmt = $conn->prepare($commentSql);
+        $commentStmt->bind_param("i", $roomId);
+        $commentStmt->execute();
+        $commentResult = $commentStmt->get_result();
+
+        if ($commentResult->num_rows > 0) {
+            while ($commentRow = $commentResult->fetch_assoc()) {
+                echo "<p><strong>" . htmlspecialchars($commentRow["username"]) . ":</strong> " . htmlspecialchars($commentRow["comment"]) . "</p>";
+            }
+        } else {
+            echo "<p>No comments yet.</p>";
+        }
+
+        // Comment form
+        echo "<form action='submit_comment.php' method='POST' class='comments-form'>
+                <input type='hidden' name='room_id' value='" . htmlspecialchars($roomId) . "'>
+                <label for='comment'>Add a comment:</label>
+                <textarea id='comment' name='comment' required></textarea>
+                <button type='submit'>Submit</button>
+            </form>";
+
+        echo "</div></div>"; // Closing room-item divs
+    }
+} else {
+    echo "<p>No rooms available.</p>";
+}
+
+$conn->close();
+?>
+
         </section>
     </main>
 

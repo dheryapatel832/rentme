@@ -4,19 +4,10 @@
 // Start the session
 session_start();
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "space_rental";
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 // Fetch available rooms
 $sql = "SELECT id, title, description, price FROM rooms";
@@ -118,13 +109,13 @@ $result = $conn->query($sql);
         </section>
 
         <!-- Add Room Button -->
-        <div class="plus-button" onclick="openAddRoomModal()">+</div>
+        <div class="plus-button" onClick="openAddRoomModal()">+</div>
 
         
         <!-- Add Room Modal -->
         <div id="addRoomModal" class="modal">
             <div class="modal-content">
-                <span class="close" onclick="closeAddRoomModal()">&times;</span>
+                <span class="close" onClick="closeAddRoomModal()">&times;</span>
                 <h2>Add New Room</h2>
                 <form action="add_room.php" method="POST" enctype="multipart/form-data">
                     <label for="title">Room Title:</label>
@@ -146,10 +137,10 @@ $result = $conn->query($sql);
 
         <!-- Image Modal -->
         <div id="imageModal" class="modal">
-            <span class="close" onclick="closeImageModal()">&times;</span>
+            <span class="close" onClick="closeImageModal()">&times;</span>
             <img id="modalImage" class="modal-image">
-            <span class="prev" onclick="prevImage()">&#10094;</span>
-            <span class="next" onclick="nextImage()">&#10095;</span>
+            <span class="prev" onClick="prevImage()">&#10094;</span>
+            <span class="next" onClick="nextImage()">&#10095;</span>
         </div>
     </main>
 

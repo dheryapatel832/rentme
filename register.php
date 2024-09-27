@@ -1,70 +1,47 @@
 <?php
-session_start();
+// register.php
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
-// Database connection
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "space_rental";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+// Check if form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Get user input from POST request
+    $username = $_POST['username'];
+    $password = $_POST['password'];
 
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+    // Validate input
+    if (!empty($username) && !empty($password)) {
+        // Check if the username already exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $stmt->store_result();
 
-// Get user input
-$user = $_POST['username'];
-$pass = password_hash($_POST['password'], PASSWORD_BCRYPT);
-
-// Handle profile picture upload
-$profilePicture = null;
-if (!empty($_FILES['profile_picture']['name'])) {
-    $file = $_FILES['profile_picture'];
-    $fileName = basename($file['name']);
-    $fileTmpName = $file['tmp_name'];
-    $fileSize = $file['size'];
-    $fileError = $file['error'];
-    $fileType = $file['type'];
-
-    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-    $allowed = array('jpg', 'jpeg', 'png', 'gif');
-
-    if (in_array($fileExt, $allowed)) {
-        if ($fileError === 0) {
-            if ($fileSize < 1000000) { // 1MB limit
-                $newFileName = uniqid('', true) . "." . $fileExt;
-                $fileDestination = 'uploads/profile_pictures/' . $newFileName;
-                
-                if (move_uploaded_file($fileTmpName, $fileDestination)) {
-                    $profilePicture = $newFileName;
-                } else {
-                    echo "Failed to upload the file.";
-                    exit();
-                }
-            } else {
-                echo "File size is too big.";
-                exit();
-            }
+        if ($stmt->num_rows > 0) {
+            echo "Username already taken. Please choose another.";
         } else {
-            echo "There was an error uploading your file.";
-            exit();
+            // Hash the password
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+            // Insert new user into the database
+            $stmt = $conn->prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)");
+            $stmt->bind_param("ss", $username, $password_hash);
+
+            if ($stmt->execute()) {
+                // Redirect to login page after successful registration
+                header("Location: login.php");
+                exit();
+            } else {
+                echo "Error: Could not register user.";
+            }
         }
+
+        $stmt->close();
     } else {
-        echo "You cannot upload files of this type.";
-        exit();
+        echo "Please fill in both username and password.";
     }
 }
 
-// Insert user into database
-$sql = "INSERT INTO users (username, password_hash, profile_picture) VALUES (?, ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("sss", $user, $pass, $profilePicture);
-$stmt->execute();
-
-$stmt->close();
 $conn->close();
-
-header("Location: login.php");
-exit();
 ?>

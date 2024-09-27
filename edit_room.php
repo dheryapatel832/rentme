@@ -6,18 +6,8 @@ if (!isset($_SESSION['username'])) {
     die("Access denied. You must be logged in to view this page.");
 }
 
-// Database connection
-$servername = "localhost";
-$dbusername = "root";
-$dbpassword = "";
-$dbname = "space_rental";
-
-$conn = new mysqli($servername, $dbusername, $dbpassword, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
 // Get the logged-in username
 $logged_in_username = $_SESSION['username'];
@@ -37,7 +27,7 @@ if ($user_result->num_rows === 0) {
 }
 
 $user_row = $user_result->fetch_assoc();
-$user_id = $user_row['id'];
+$user_id = $user_row['id']; // Correct column name is 'id'
 $profile_picture = $user_row['profile_picture'] ? 'uploads/profile_pictures/' . htmlspecialchars($user_row['profile_picture']) : 'default-avatar.png';
 
 // Fetch rooms for the logged-in user
@@ -95,6 +85,20 @@ $room_result = $stmt->get_result();
             border-radius: 50%;
             margin-right: 15px;
         }
+
+        .edit-button, .delete-button {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .delete-button {
+            background-color: #dc3545; /* Red */
+        }
     </style>
 </head>
 <body>
@@ -141,9 +145,10 @@ $room_result = $stmt->get_result();
                         echo "</div>";
                     }
 
-                    echo "<a href='update_room.php?id=" . urlencode($row["id"]) . "' class='edit-button'>Edit</a>";
+                    // Links to edit and delete the room
+                    echo "<a href='update_room.php?id=" . urlencode($room_id) . "' class='edit-button'>Edit</a>";
                     echo "<a href='delete_room.php?id=" . urlencode($row["id"]) . "' class='delete-button'>Delete</a>";
-                    echo "</div>";
+                    echo "</div>"; // Close room-item div
                 }
             } else {
                 echo "<p>You have no rooms listed.</p>";

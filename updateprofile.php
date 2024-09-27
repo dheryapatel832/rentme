@@ -7,18 +7,11 @@ if (!isset($_SESSION['username'])) {
     exit;
 }
 
-// Database connection
-$servername = "localhost";
-$db_username = "root";
-$db_password = "";
-$dbname = "space_rental";
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
-$conn = new mysqli($servername, $db_username, $db_password, $dbname);
 
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+
 
 // Get user ID from session
 $user_id = $_SESSION['username']; // Ensure this matches how you're storing user ID in session

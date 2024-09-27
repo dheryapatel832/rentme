@@ -8,16 +8,9 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "space_rental";
+// Include the database connection file
+include 'db_connect.php'; // This will use the connection from db_connect.php
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
 
 $user = $_SESSION['username'];
 
